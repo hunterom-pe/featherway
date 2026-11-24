@@ -11,6 +11,33 @@ struct SightingLocation: Codable {
     }
 }
 
+struct ActiveRound {
+    let course: String
+    let hole: Int
+
+    init?(course: String, hole: Int) {
+        let trimmed = course.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, (1...18).contains(hole) else { return nil }
+        self.course = trimmed
+        self.hole = hole
+    }
+
+    static func load(from defaults: UserDefaults = .standard) -> ActiveRound? {
+        guard let values = defaults.dictionary(forKey: "activeRound"),
+              let course = values["course"] as? String,
+              let hole = values["hole"] as? Int else { return nil }
+        return ActiveRound(course: course, hole: hole)
+    }
+
+    static func store(_ round: ActiveRound?, in defaults: UserDefaults = .standard) {
+        if let round {
+            defaults.set(["course": round.course, "hole": round.hole], forKey: "activeRound")
+        } else {
+            defaults.removeObject(forKey: "activeRound")
+        }
+    }
+}
+
 struct SightingFiles {
     let directory: URL
 

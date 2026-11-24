@@ -15,6 +15,12 @@ struct BirdCaptureView: View {
     @State private var saving = false
     @State private var saveFailed = false
 
+    init(round: ActiveRound?, onSave: @escaping (URL) -> Void) {
+        _course = State(initialValue: round?.course ?? "")
+        _hole = State(initialValue: round?.hole)
+        self.onSave = onSave
+    }
+
     private enum Stage {
         case checking, camera, denied, restricted, unavailable, failed
         case review(UIImage)

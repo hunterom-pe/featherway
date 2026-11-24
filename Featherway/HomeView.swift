@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State private var showingRoundPlaceholder = false
+    @State private var showingRound = false
+    @State private var round = ActiveRound.load()
+    @State private var draftCourse = ""
+    @State private var draftHole = 1
 
     @State private var selectedTab = Tab.home
 
@@ -44,7 +47,7 @@ struct HomeView: View {
         .tint(Palette.copper)
         .task { loadSightings() }
         .fullScreenCover(isPresented: $showingCamera) {
-            BirdCaptureView { url in
+            BirdCaptureView(round: round) { url in
                 sightings.insert(url, at: 0)
                 if loadFailed { loadSightings() }
             }
@@ -72,10 +75,8 @@ struct HomeView: View {
             .background(Palette.ivory)
             .tint(Palette.forest)
         }
-        .alert("Start a Round", isPresented: $showingRoundPlaceholder) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Round tracking is planned for a later version.")
+        .sheet(isPresented: $showingRound) {
+            roundEditor
         }
     }
 
@@ -85,11 +86,65 @@ struct HomeView: View {
 
         VStack(spacing: 8) {
             actionButton("Spot a Bird", symbol: "camera", prominent: true) { showingCamera = true }
-            actionButton("Start a Round", symbol: "flag", prominent: false) { showingRoundPlaceholder = true }
+            actionButton(round.map { "\($0.course) · Hole \($0.hole)" } ?? "Start a Round",
+                         symbol: "flag", prominent: false) {
+                draftCourse = round?.course ?? ""
+                draftHole = round?.hole ?? 1
+                showingRound = true
+            }
         }
 
         collection
             .padding(.top, 3)
+    }
+
+    private var roundEditor: some View {
+        NavigationStack {
+            Form {
+                Section("Golf course") {
+                    TextField("Course name", text: $draftCourse)
+                        .textInputAutocapitalization(.words)
+                }
+                Section {
+                    Picker("Hole", selection: $draftHole) {
+                        ForEach(1...18, id: \.self) { hole in
+                            Text(hole.formatted()).tag(hole)
+                        }
+                    }
+                } header: {
+                    Text("Current hole")
+                } footer: {
+                    Text("New bird sightings will use this course and hole.")
+                }
+                if round != nil {
+                    Button("End Round") { setRound(nil) }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Palette.ivory)
+            .navigationTitle(round == nil ? "Start a Round" : "Current round")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showingRound = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(round == nil ? "Start" : "Save") {
+                        if let updated = ActiveRound(course: draftCourse, hole: draftHole) {
+                            setRound(updated)
+                        }
+                    }
+                    .disabled(ActiveRound(course: draftCourse, hole: draftHole) == nil)
+                }
+            }
+        }
+        .tint(Palette.forest)
+    }
+
+    private func setRound(_ updated: ActiveRound?) {
+        ActiveRound.store(updated)
+        round = updated
+        showingRound = false
     }
 
     private var myBirds: some View {
