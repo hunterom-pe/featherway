@@ -3,6 +3,8 @@ import SwiftUI
 struct HomeView: View {
     @State private var pendingAction: PreviewAction?
 
+    @State private var showingCamera = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -12,8 +14,8 @@ struct HomeView: View {
                 hero
 
                 VStack(spacing: 8) {
-                    actionButton(.spotBird, prominent: true)
-                    actionButton(.startRound, prominent: false)
+                    actionButton("Spot a Bird", symbol: "camera", prominent: true) { showingCamera = true }
+                    actionButton(PreviewAction.startRound.title, symbol: "flag", prominent: false) { pendingAction = .startRound }
                 }
 
                 collection
@@ -30,6 +32,7 @@ struct HomeView: View {
         .background(Palette.ivory.ignoresSafeArea())
         .foregroundStyle(Palette.forest)
         .tint(Palette.copper)
+        .fullScreenCover(isPresented: $showingCamera) { BirdCaptureView() }
         .alert(
             pendingAction?.title ?? "",
             isPresented: Binding(
@@ -123,12 +126,10 @@ struct HomeView: View {
         .clipShape(.rect(cornerRadius: 17))
     }
 
-    private func actionButton(_ action: PreviewAction, prominent: Bool) -> some View {
-        Button {
-            pendingAction = action
-        } label: {
+    private func actionButton(_ title: String, symbol: String, prominent: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 15) {
-                Image(systemName: action.symbol)
+                Image(systemName: symbol)
                     .font(.system(prominent ? .title2 : .body))
                     .accessibilityHidden(true)
 
@@ -139,7 +140,7 @@ struct HomeView: View {
                         .accessibilityHidden(true)
                 }
 
-                Text(action.title)
+                Text(title)
                     .font(.system(prominent ? .title2 : .body, design: .serif).weight(.medium))
             }
             .foregroundStyle(prominent ? Palette.ivory : Palette.forest)
@@ -278,7 +279,7 @@ struct HomeView: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
-    private enum Palette {
+    enum Palette {
         static let forest = Color(red: 24 / 255, green: 55 / 255, blue: 39 / 255)
         static let heroGreen = Color(red: 40 / 255, green: 59 / 255, blue: 40 / 255)
         static let ivory = Color(red: 243 / 255, green: 238 / 255, blue: 227 / 255)
@@ -288,28 +289,18 @@ struct HomeView: View {
     }
 
     private enum PreviewAction {
-        case spotBird, startRound, myBirds, history
+        case startRound, myBirds, history
 
         var title: String {
             switch self {
-            case .spotBird: "Spot a Bird"
             case .startRound: "Start a Round"
             case .myBirds: "My Birds"
             case .history: "History"
             }
         }
 
-        var symbol: String {
-            switch self {
-            case .spotBird: "camera"
-            case .startRound, .history: "flag"
-            case .myBirds: "bird"
-            }
-        }
-
         var previewMessage: String {
             switch self {
-            case .spotBird: "Bird photo capture is planned for a later version."
             case .startRound: "Round tracking is planned for a later version."
             case .myBirds: "You can preview the sample collection on Home."
             case .history: "Sighting and round history are planned for a later version."
