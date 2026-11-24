@@ -9,6 +9,7 @@ struct BirdCaptureView: View {
     @State private var stage = Stage.checking
 
     let onSave: (URL) -> Void
+    @State private var birdName = ""
     @State private var saving = false
     @State private var saveFailed = false
 
@@ -53,7 +54,11 @@ struct BirdCaptureView: View {
                             Text("Your bird photo")
                                 .font(.system(.largeTitle, design: .serif))
                                 .accessibilityAddTraits(.isHeader)
-                            Text("Save this sighting to your collection on this iPhone.")
+                            TextField("Bird name (optional)", text: $birdName)
+                                .textFieldStyle(.roundedBorder)
+                                .textInputAutocapitalization(.words)
+                                .submitLabel(.done)
+                                .disabled(saving)
                         }
                         .padding()
                     }
@@ -62,7 +67,7 @@ struct BirdCaptureView: View {
                         saving = true
                         Task {
                             do {
-                                let url = try await Self.save(image)
+                                let url = try await Self.save(image, name: birdName)
                                 onSave(url)
                                 dismiss()
                             } catch {
@@ -109,11 +114,11 @@ struct BirdCaptureView: View {
         }
     }
 
-    nonisolated private static func save(_ image: UIImage) async throws -> URL {
+    nonisolated private static func save(_ image: UIImage, name: String) async throws -> URL {
         guard let jpeg = image.jpegData(compressionQuality: 0.9) else {
             throw CocoaError(.fileWriteUnknown)
         }
-        return try SightingFiles.local.save(jpeg)
+        return try SightingFiles.local.save(jpeg, name: name)
     }
 
     @MainActor

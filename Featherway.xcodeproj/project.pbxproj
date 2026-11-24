@@ -257,7 +257,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Featherway;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Featherway uses the camera to take a bird photo for you to review.";
@@ -269,7 +269,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.0.3;
+				MARKETING_VERSION = 0.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.huntermade.featherway;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
@@ -284,7 +284,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Featherway;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Featherway uses the camera to take a bird photo for you to review.";
@@ -296,7 +296,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.0.3;
+				MARKETING_VERSION = 0.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.huntermade.featherway;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;

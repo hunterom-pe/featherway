@@ -1,6 +1,6 @@
-# Featherway V0.0.3
+# Featherway V0.0.4
 
-Featherway is a native SwiftUI birdwatching app for golfers. On an iPhone running iOS 17 or later, Spot a Bird opens the native still camera. Use Photo opens a preview. Save Sighting keeps the photo in Featherway’s private collection on the iPhone. Discard Photo returns home.
+Featherway is a native SwiftUI birdwatching app for golfers. On an iPhone running iOS 17 or later, Spot a Bird opens the native still camera. Use Photo opens a preview with an optional bird name. Save Sighting keeps the photo in Featherway’s private collection on the iPhone. Discard Photo returns home.
 
 ## Open and run
 
@@ -12,15 +12,17 @@ The approved design references are in `references/`. The home mockup drives the 
 
 ## QA for this milestone
 
+- Enter a bird name, save, relaunch, and tap the sighting to see its name. Save another with the field empty. Earlier sightings should still open.
+
 - On iPhone, take a photo and choose **Use Photo → Save Sighting**. Check the collection count and tap the new thumbnail to review the photo.
 - Save a second photo. Close and relaunch Featherway and verify both photos reopen in the expected order and orientation.
 - Discard a third photo and cancel a capture. Verify the count stays at two. Camera, Settings recovery, and placeholders follow the previous milestone.
 - The local store writes each JPEG atomically to Application Support. A failed save leaves the captured photo available for retry. Sightings count individual photos.
 - V0.0.3 unsigned device and simulator builds passed. A local storage check verified empty state, unique saves, newest-first ordering, exact JPEG recovery after reopening, and write-failure isolation.
-- V0.0.2 camera QA was approved on iPhone. On-device save and relaunch QA is pending for V0.0.3.
+- V0.0.2 camera QA was approved on iPhone. V0.0.3 local sighting QA was approved. On-device naming QA is pending for V0.0.4.
 
 ## Shared Git workflow
 
 Open this same folder in Codex or Claude Code and use one editor at a time. Start with `git status --short --branch`. Finish a handoff by recording the current branch and commit, build and QA results, and any open issues. Read `AGENTS.md` for shared scope and handoff details.
 
-The GitHub remote is configured as `origin`. The approved V0.0.2 checkpoint is on GitHub. Push each milestone after user approval and before starting the next phase. The existing planning documents in `Docs/` are kept out of Git. Wait for user QA before starting the next milestone.
+The GitHub remote is configured as `origin`. The approved V0.0.3 checkpoint is on GitHub. Push each milestone after user approval and before starting the next phase. The existing planning documents in `Docs/` are kept out of Git. Wait for user QA before starting the next milestone.

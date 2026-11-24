@@ -11,6 +11,7 @@ struct HomeView: View {
 
     private struct SavedPhoto: Identifiable {
         let id: URL
+        let name: String?
     }
 
     var body: some View {
@@ -49,6 +50,10 @@ struct HomeView: View {
         }
         .sheet(item: $selectedPhoto) { photo in
             VStack {
+                Text(verbatim: photo.name ?? "Your bird photo")
+                    .font(.system(.title, design: .serif))
+                    .foregroundStyle(Palette.forest)
+                    .accessibilityAddTraits(.isHeader)
                 SightingPhoto(url: photo.id, isThumbnail: false)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Button("Done") { selectedPhoto = nil }
@@ -212,7 +217,7 @@ struct HomeView: View {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
                     ForEach(Array(sightings.enumerated()), id: \.element) { index, url in
                         Button {
-                            selectedPhoto = SavedPhoto(id: url)
+                            selectedPhoto = SavedPhoto(id: url, name: SightingFiles.birdName(for: url))
                         } label: {
                             Color.clear
                                 .aspectRatio(1.1, contentMode: .fit)
