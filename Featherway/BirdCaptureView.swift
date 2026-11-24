@@ -78,6 +78,7 @@ struct BirdCaptureView: View {
                         .padding(.top)
                     Button("Discard Photo", role: .cancel) { dismiss() }
                         .disabled(saving)
+                        .padding(.top, 20)
                         .padding(.bottom)
                 }
                 .interactiveDismissDisabled(saving)
