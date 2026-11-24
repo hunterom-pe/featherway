@@ -43,6 +43,13 @@ struct SightingFiles {
         return destination.appending(path: filename)
     }
 
+    static func savedAt(for photo: URL) -> Date? {
+        let filename = photo.deletingPathExtension().lastPathComponent
+        guard let separator = filename.firstIndex(of: "-"),
+              let milliseconds = Int64(filename[..<separator]) else { return nil }
+        return Date(timeIntervalSince1970: Double(milliseconds) / 1000)
+    }
+
     static func birdName(for photo: URL) -> String? {
         let folder = photo.deletingLastPathComponent()
         guard folder.pathExtension == "sighting" else { return nil }

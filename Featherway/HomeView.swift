@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State private var pendingAction: PreviewAction?
+    @State private var showingRoundPlaceholder = false
 
-    @State private var showingMyBirds = false
+    @State private var selectedTab = Tab.home
+
+    private enum Tab { case home, myBirds, history }
     @State private var showingCamera = false
 
     @State private var sightings: [URL] = []
@@ -21,17 +23,17 @@ struct HomeView: View {
                 wordmark
                     .padding(.vertical, 7)
 
-                if showingMyBirds {
-                    myBirds
-                } else {
-                    homeContent
+                switch selectedTab {
+                case .home: homeContent
+                case .myBirds: myBirds
+                case .history: history
                 }
             }
             .padding(.horizontal, 15)
             .padding(.top, 6)
             .padding(.bottom, 12)
         }
-        .id(showingMyBirds)
+        .id(selectedTab)
         .scrollIndicators(.hidden)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             tabBar
@@ -61,17 +63,10 @@ struct HomeView: View {
             .background(Palette.ivory)
             .tint(Palette.forest)
         }
-        .alert(
-            pendingAction?.title ?? "",
-            isPresented: Binding(
-                get: { pendingAction != nil },
-                set: { if !$0 { pendingAction = nil } }
-            ),
-            presenting: pendingAction
-        ) { _ in
+        .alert("Start a Round", isPresented: $showingRoundPlaceholder) {
             Button("OK", role: .cancel) {}
-        } message: { action in
-            Text(action.previewMessage)
+        } message: {
+            Text("Round tracking is planned for a later version.")
         }
     }
 
@@ -81,7 +76,7 @@ struct HomeView: View {
 
         VStack(spacing: 8) {
             actionButton("Spot a Bird", symbol: "camera", prominent: true) { showingCamera = true }
-            actionButton(PreviewAction.startRound.title, symbol: "flag", prominent: false) { pendingAction = .startRound }
+            actionButton("Start a Round", symbol: "flag", prominent: false) { showingRoundPlaceholder = true }
         }
 
         collection
@@ -118,6 +113,48 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var history: some View {
+        LazyVStack(alignment: .leading, spacing: 12) {
+            Text("History")
+                .font(.system(.largeTitle, design: .serif))
+                .accessibilityAddTraits(.isHeader)
+            if loadFailed {
+                Button("Couldn’t load sightings. Try again") { loadSightings() }
+            } else if sightings.isEmpty {
+                ContentUnavailableView("No sightings yet", systemImage: "clock",
+                    description: Text("Saved sightings will appear here in date order."))
+            } else {
+                ForEach(sightings, id: \.self) { url in
+                    Button {
+                        openPhoto(url)
+                    } label: {
+                        HStack(spacing: 14) {
+                            thumbnail(url)
+                                .frame(width: 70)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(verbatim: SightingFiles.birdName(for: url) ?? "Unnamed sighting")
+                                    .font(.system(.headline, design: .serif))
+                                if let date = SightingFiles.savedAt(for: url) {
+                                    Text(date.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.subheadline)
+                                        .foregroundStyle(Palette.sage)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(Palette.sage)
+                                .accessibilityHidden(true)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    Divider()
                 }
             }
         }
@@ -347,9 +384,9 @@ struct HomeView: View {
 
     private var tabBar: some View {
         HStack(spacing: 0) {
-            tabItem("Home", icon: "house", selected: !showingMyBirds) { showingMyBirds = false }
-            tabItem("My Birds", icon: "bird", selected: showingMyBirds) { showingMyBirds = true }
-            tabItem("History", icon: "flag") { pendingAction = .history }
+            tabItem("Home", icon: "house", selected: selectedTab == .home) { selectedTab = .home }
+            tabItem("My Birds", icon: "bird", selected: selectedTab == .myBirds) { selectedTab = .myBirds }
+            tabItem("History", icon: "flag", selected: selectedTab == .history) { selectedTab = .history }
         }
         .padding(.horizontal, 10)
         .padding(.top, 5)
@@ -399,23 +436,6 @@ struct HomeView: View {
         static let sage = Color(red: 83 / 255, green: 104 / 255, blue: 88 / 255)
     }
 
-    private enum PreviewAction {
-        case startRound, history
-
-        var title: String {
-            switch self {
-            case .startRound: "Start a Round"
-            case .history: "History"
-            }
-        }
-
-        var previewMessage: String {
-            switch self {
-            case .startRound: "Round tracking is planned for a later version."
-            case .history: "Sighting and round history are planned for a later version."
-            }
-        }
-    }
 }
 
 #Preview {
