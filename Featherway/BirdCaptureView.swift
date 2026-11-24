@@ -8,6 +8,10 @@ struct BirdCaptureView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var stage = Stage.checking
 
+    let onSave: (URL) -> Void
+    @State private var saving = false
+    @State private var saveFailed = false
+
     private enum Stage {
         case checking, camera, denied, restricted, unavailable, failed
         case review(UIImage)
@@ -49,15 +53,38 @@ struct BirdCaptureView: View {
                             Text("Your bird photo")
                                 .font(.system(.largeTitle, design: .serif))
                                 .accessibilityAddTraits(.isHeader)
-                            Text("This preview closes when you tap Done. The photo is temporary.")
+                            Text("Save this sighting to your collection on this iPhone.")
                         }
                         .padding()
                     }
-                    Button("Done") { dismiss() }
+                    Button(saving ? "Saving…" : "Save Sighting") {
+                        guard !saving else { return }
+                        saving = true
+                        Task {
+                            do {
+                                let url = try await Self.save(image)
+                                onSave(url)
+                                dismiss()
+                            } catch {
+                                saving = false
+                                saveFailed = true
+                            }
+                        }
+                    }
+                    .disabled(saving)
                         .foregroundStyle(HomeView.Palette.ivory)
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
-                        .padding()
+                        .padding(.top)
+                    Button("Discard Photo", role: .cancel) { dismiss() }
+                        .disabled(saving)
+                        .padding(.bottom)
+                }
+                .interactiveDismissDisabled(saving)
+                .alert("Couldn’t save the sighting", isPresented: $saveFailed) {
+                    Button("OK") {}
+                } message: {
+                    Text("Check the available storage on this iPhone and try again. Your photo is still here.")
                 }
             case .denied:
                 notice("Camera access is off", "Turn on Camera in Featherway’s Settings to take a bird photo.", settings: true)
@@ -79,6 +106,13 @@ struct BirdCaptureView: View {
                 stage = .checking
             }
         }
+    }
+
+    nonisolated private static func save(_ image: UIImage) async throws -> URL {
+        guard let jpeg = image.jpegData(compressionQuality: 0.9) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        return try SightingFiles.local.save(jpeg)
     }
 
     @MainActor

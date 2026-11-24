@@ -5,6 +5,14 @@ struct HomeView: View {
 
     @State private var showingCamera = false
 
+    @State private var sightings: [URL] = []
+    @State private var selectedPhoto: SavedPhoto?
+    @State private var loadFailed = false
+
+    private struct SavedPhoto: Identifiable {
+        let id: URL
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -32,7 +40,24 @@ struct HomeView: View {
         .background(Palette.ivory.ignoresSafeArea())
         .foregroundStyle(Palette.forest)
         .tint(Palette.copper)
-        .fullScreenCover(isPresented: $showingCamera) { BirdCaptureView() }
+        .task { loadSightings() }
+        .fullScreenCover(isPresented: $showingCamera) {
+            BirdCaptureView { url in
+                sightings.insert(url, at: 0)
+                if loadFailed { loadSightings() }
+            }
+        }
+        .sheet(item: $selectedPhoto) { photo in
+            VStack {
+                SightingPhoto(url: photo.id, isThumbnail: false)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Button("Done") { selectedPhoto = nil }
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding()
+            .background(Palette.ivory)
+            .tint(Palette.forest)
+        }
         .alert(
             pendingAction?.title ?? "",
             isPresented: Binding(
@@ -166,22 +191,49 @@ struct HomeView: View {
                 HStack {
                     collectionTitle.fixedSize()
                     Spacer(minLength: 8)
-                    collectionCount.fixedSize()
+                    if !loadFailed { collectionCount.fixedSize() }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     collectionTitle
-                    collectionCount
+                    if !loadFailed { collectionCount }
                 }
             }
 
-            HStack(spacing: 6) {
-                birdTile(.heron, name: "Great Blue Heron")
-                birdTile(.hawk, name: "Hawk")
-                birdTile(.quail, name: "Quail")
+            if loadFailed {
+                Button("Couldn’t load sightings. Try again") { loadSightings() }
+            } else if sightings.isEmpty {
+                HStack(spacing: 6) {
+                    birdTile(.heron, name: "Great Blue Heron")
+                    birdTile(.hawk, name: "Hawk")
+                    birdTile(.quail, name: "Quail")
+                }
+            } else {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
+                    ForEach(Array(sightings.enumerated()), id: \.element) { index, url in
+                        Button {
+                            selectedPhoto = SavedPhoto(id: url)
+                        } label: {
+                            Color.clear
+                                .aspectRatio(1.1, contentMode: .fit)
+                                .overlay { SightingPhoto(url: url, isThumbnail: true) }
+                                .clipShape(.rect(cornerRadius: 11))
+                        }
+                        .accessibilityLabel("View sighting \(sightings.count - index)")
+                    }
+                }
             }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private func loadSightings() {
+        do {
+            sightings = try SightingFiles.local.list()
+            loadFailed = false
+        } catch {
+            loadFailed = true
+        }
     }
 
     private var collectionTitle: some View {
@@ -199,11 +251,11 @@ struct HomeView: View {
 
     private var collectionCount: some View {
         VStack(spacing: 2) {
-            Text("3")
+            Text(sightings.isEmpty ? "3" : String(sightings.count))
                 .font(.system(.title, design: .serif).weight(.medium))
                 .monospacedDigit()
 
-            Text("SAMPLE SPECIES")
+            Text(sightings.isEmpty ? "SAMPLE SPECIES" : "SIGHTINGS")
                 .font(.caption2.weight(.semibold))
                 .tracking(1)
                 .foregroundStyle(Palette.sage)
@@ -212,7 +264,7 @@ struct HomeView: View {
         .padding(.vertical, 5)
         .background(Palette.stone, in: .rect(cornerRadius: 14))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("3 sample species")
+        .accessibilityLabel(sightings.isEmpty ? "3 sample species" : "\(sightings.count) saved sightings")
     }
 
     private func birdTile(_ artwork: ImageResource, name: String) -> some View {
@@ -302,7 +354,7 @@ struct HomeView: View {
         var previewMessage: String {
             switch self {
             case .startRound: "Round tracking is planned for a later version."
-            case .myBirds: "You can preview the sample collection on Home."
+            case .myBirds: "Your collection is on Home, below Spot a Bird."
             case .history: "Sighting and round history are planned for a later version."
             }
         }
