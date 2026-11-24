@@ -15,6 +15,7 @@ struct HomeView: View {
     private struct SavedPhoto: Identifiable {
         let id: URL
         let name: String?
+        let location: SightingLocation?
     }
 
     var body: some View {
@@ -54,6 +55,14 @@ struct HomeView: View {
                     .font(.system(.title, design: .serif))
                     .foregroundStyle(Palette.forest)
                     .accessibilityAddTraits(.isHeader)
+                if let location = photo.location {
+                    if !location.course.isEmpty {
+                        Label(location.course, systemImage: "mappin")
+                    }
+                    if let hole = location.hole {
+                        Label("Hole \(hole)", systemImage: "flag")
+                    }
+                }
                 SightingPhoto(url: photo.id, isThumbnail: false)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Button("Done") { selectedPhoto = nil }
@@ -162,7 +171,7 @@ struct HomeView: View {
     }
 
     private func openPhoto(_ url: URL) {
-        selectedPhoto = SavedPhoto(id: url, name: SightingFiles.birdName(for: url))
+        selectedPhoto = SavedPhoto(id: url, name: SightingFiles.birdName(for: url), location: SightingFiles.location(for: url))
     }
 
     private var wordmark: some View {

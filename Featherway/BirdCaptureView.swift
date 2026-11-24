@@ -9,6 +9,8 @@ struct BirdCaptureView: View {
     @State private var stage = Stage.checking
 
     let onSave: (URL) -> Void
+    @State private var course = ""
+    @State private var hole: Int?
     @State private var birdName = ""
     @State private var saving = false
     @State private var saveFailed = false
@@ -59,6 +61,12 @@ struct BirdCaptureView: View {
                                 .textInputAutocapitalization(.words)
                                 .submitLabel(.done)
                                 .disabled(saving)
+                            TextField("Golf course (optional)", text: $course)
+                                .textFieldStyle(.roundedBorder)
+                                .textInputAutocapitalization(.words)
+                                .submitLabel(.done)
+                                .disabled(saving)
+                            holePicker
                         }
                         .padding()
                     }
@@ -67,7 +75,7 @@ struct BirdCaptureView: View {
                         saving = true
                         Task {
                             do {
-                                let url = try await Self.save(image, name: birdName)
+                                let url = try await Self.save(image, name: birdName, location: SightingLocation(course: course, hole: hole))
                                 onSave(url)
                                 dismiss()
                             } catch {
@@ -114,11 +122,35 @@ struct BirdCaptureView: View {
         }
     }
 
-    nonisolated private static func save(_ image: UIImage, name: String) async throws -> URL {
+    private var holePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Hole number (optional)")
+                .font(.system(.headline, design: .serif))
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 6)], spacing: 6) {
+                ForEach(1...18, id: \.self) { number in
+                    Button {
+                        hole = hole == number ? nil : number
+                    } label: {
+                        Text(number.formatted())
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .foregroundStyle(hole == number ? HomeView.Palette.ivory : HomeView.Palette.forest)
+                            .background(hole == number ? HomeView.Palette.copper : HomeView.Palette.stone,
+                                        in: .rect(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Hole \(number)")
+                    .accessibilityAddTraits(hole == number ? .isSelected : [])
+                }
+            }
+        }
+        .disabled(saving)
+    }
+
+    nonisolated private static func save(_ image: UIImage, name: String, location: SightingLocation?) async throws -> URL {
         guard let jpeg = image.jpegData(compressionQuality: 0.9) else {
             throw CocoaError(.fileWriteUnknown)
         }
-        return try SightingFiles.local.save(jpeg, name: name)
+        return try SightingFiles.local.save(jpeg, name: name, location: location)
     }
 
     @MainActor
