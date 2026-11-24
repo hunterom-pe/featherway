@@ -5,6 +5,7 @@ import UIKit
 struct BirdCaptureView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @State private var stage = Stage.checking
 
@@ -14,6 +15,8 @@ struct BirdCaptureView: View {
     @State private var birdName = ""
     @State private var saving = false
     @State private var saveFailed = false
+
+    private enum ReviewAnchor { case course }
 
     private enum Stage {
         case checking, camera, denied, restricted, unavailable, failed
@@ -46,29 +49,51 @@ struct BirdCaptureView: View {
                     .padding()
                     .foregroundStyle(HomeView.Palette.ivory)
                     .background(HomeView.Palette.forest)
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .clipShape(.rect(cornerRadius: 16))
-                                .accessibilityLabel("Your captured photo")
-                            Text("Your bird photo")
-                                .font(.system(.largeTitle, design: .serif))
-                                .accessibilityAddTraits(.isHeader)
-                            TextField("Bird name (optional)", text: $birdName)
-                                .textFieldStyle(.roundedBorder)
-                                .textInputAutocapitalization(.words)
-                                .submitLabel(.done)
-                                .disabled(saving)
-                            TextField("Golf course (optional)", text: $course)
-                                .textFieldStyle(.roundedBorder)
-                                .textInputAutocapitalization(.words)
-                                .submitLabel(.done)
-                                .disabled(saving)
-                            holePicker
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Button {
+                                    withAnimation(reduceMotion ? nil : .easeInOut) {
+                                        proxy.scrollTo(ReviewAnchor.course, anchor: .top)
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text("Course & hole (optional)")
+                                        Spacer()
+                                        Image(systemName: "arrow.down")
+                                            .accessibilityHidden(true)
+                                    }
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(HomeView.Palette.forest)
+                                    .padding(.horizontal, 14)
+                                    .frame(minHeight: 44)
+                                    .background(HomeView.Palette.stone, in: .rect(cornerRadius: 10))
+                                }
+                                .accessibilityHint("Scrolls to the golf course and hole fields.")
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .clipShape(.rect(cornerRadius: 16))
+                                    .accessibilityLabel("Your captured photo")
+                                Text("Your bird photo")
+                                    .font(.system(.largeTitle, design: .serif))
+                                    .accessibilityAddTraits(.isHeader)
+                                TextField("Bird name (optional)", text: $birdName)
+                                    .textFieldStyle(.roundedBorder)
+                                    .textInputAutocapitalization(.words)
+                                    .submitLabel(.done)
+                                    .disabled(saving)
+                                TextField("Golf course (optional)", text: $course)
+                                    .textFieldStyle(.roundedBorder)
+                                    .textInputAutocapitalization(.words)
+                                    .submitLabel(.done)
+                                    .disabled(saving)
+                                    .id(ReviewAnchor.course)
+                                holePicker
+                            }
+                            .padding()
                         }
-                        .padding()
+                        .scrollIndicatorsFlash(onAppear: true)
                     }
                     Button(saving ? "Saving…" : "Save Sighting") {
                         guard !saving else { return }
