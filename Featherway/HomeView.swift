@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @State private var pendingAction: PreviewAction?
 
+    @State private var showingMyBirds = false
     @State private var showingCamera = false
 
     @State private var sightings: [URL] = []
@@ -20,20 +21,17 @@ struct HomeView: View {
                 wordmark
                     .padding(.vertical, 7)
 
-                hero
-
-                VStack(spacing: 8) {
-                    actionButton("Spot a Bird", symbol: "camera", prominent: true) { showingCamera = true }
-                    actionButton(PreviewAction.startRound.title, symbol: "flag", prominent: false) { pendingAction = .startRound }
+                if showingMyBirds {
+                    myBirds
+                } else {
+                    homeContent
                 }
-
-                collection
-                    .padding(.top, 3)
             }
             .padding(.horizontal, 15)
             .padding(.top, 6)
             .padding(.bottom, 12)
         }
+        .id(showingMyBirds)
         .scrollIndicators(.hidden)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             tabBar
@@ -75,6 +73,59 @@ struct HomeView: View {
         } message: { action in
             Text(action.previewMessage)
         }
+    }
+
+    @ViewBuilder
+    private var homeContent: some View {
+        hero
+
+        VStack(spacing: 8) {
+            actionButton("Spot a Bird", symbol: "camera", prominent: true) { showingCamera = true }
+            actionButton(PreviewAction.startRound.title, symbol: "flag", prominent: false) { pendingAction = .startRound }
+        }
+
+        collection
+            .padding(.top, 3)
+    }
+
+    private var myBirds: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("My Birds")
+                .font(.system(.largeTitle, design: .serif))
+                .accessibilityAddTraits(.isHeader)
+            if loadFailed {
+                Button("Couldn’t load sightings. Try again") { loadSightings() }
+            } else if sightings.isEmpty {
+                ContentUnavailableView {
+                    Label("No saved sightings yet", systemImage: "bird")
+                } description: {
+                    Text("Save a bird photo to start your collection.")
+                } actions: {
+                    Button("Spot a Bird") { showingCamera = true }
+                }
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 16) {
+                    ForEach(sightings, id: \.self) { url in
+                        Button {
+                            openPhoto(url)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                thumbnail(url)
+                                Text(verbatim: SightingFiles.birdName(for: url) ?? "Unnamed sighting")
+                                    .font(.system(.headline, design: .serif))
+                                    .multilineTextAlignment(.leading)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func openPhoto(_ url: URL) {
+        selectedPhoto = SavedPhoto(id: url, name: SightingFiles.birdName(for: url))
     }
 
     private var wordmark: some View {
@@ -217,12 +268,9 @@ struct HomeView: View {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
                     ForEach(Array(sightings.enumerated()), id: \.element) { index, url in
                         Button {
-                            selectedPhoto = SavedPhoto(id: url, name: SightingFiles.birdName(for: url))
+                            openPhoto(url)
                         } label: {
-                            Color.clear
-                                .aspectRatio(1.1, contentMode: .fit)
-                                .overlay { SightingPhoto(url: url, isThumbnail: true) }
-                                .clipShape(.rect(cornerRadius: 11))
+                            thumbnail(url)
                         }
                         .accessibilityLabel("View sighting \(sightings.count - index)")
                     }
@@ -230,6 +278,14 @@ struct HomeView: View {
             }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private func thumbnail(_ url: URL) -> some View {
+        Color.clear
+            .aspectRatio(1.1, contentMode: .fit)
+            .overlay { SightingPhoto(url: url, isThumbnail: true) }
+            .clipShape(.rect(cornerRadius: 11))
+            .accessibilityHidden(true)
     }
 
     private func loadSightings() {
@@ -291,9 +347,9 @@ struct HomeView: View {
 
     private var tabBar: some View {
         HStack(spacing: 0) {
-            tabItem("Home", icon: "house", selected: true)
-            tabItem("My Birds", icon: "bird", action: .myBirds)
-            tabItem("History", icon: "flag", action: .history)
+            tabItem("Home", icon: "house", selected: !showingMyBirds) { showingMyBirds = false }
+            tabItem("My Birds", icon: "bird", selected: showingMyBirds) { showingMyBirds = true }
+            tabItem("History", icon: "flag") { pendingAction = .history }
         }
         .padding(.horizontal, 10)
         .padding(.top, 5)
@@ -312,11 +368,9 @@ struct HomeView: View {
         _ title: String,
         icon: String,
         selected: Bool = false,
-        action: PreviewAction? = nil
+        action: @escaping () -> Void
     ) -> some View {
-        Button {
-            pendingAction = action
-        } label: {
+        Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 21))
@@ -346,12 +400,11 @@ struct HomeView: View {
     }
 
     private enum PreviewAction {
-        case startRound, myBirds, history
+        case startRound, history
 
         var title: String {
             switch self {
             case .startRound: "Start a Round"
-            case .myBirds: "My Birds"
             case .history: "History"
             }
         }
@@ -359,7 +412,6 @@ struct HomeView: View {
         var previewMessage: String {
             switch self {
             case .startRound: "Round tracking is planned for a later version."
-            case .myBirds: "Your collection is on Home, below Spot a Bird."
             case .history: "Sighting and round history are planned for a later version."
             }
         }
